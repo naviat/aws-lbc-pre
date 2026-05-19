@@ -915,7 +915,7 @@
       <div class="card">
         <div class="reason-num">06</div>
         <div class="card-title">CloudFront-centric design</div>
-        <p class="body">WAF at CloudFront, CDN upstream, TLS at ALB — we don't need advanced L7 features. AWS LBC is sufficient without a full proxy layer.</p>
+        <p class="body">WAF, CDN, and caching already handled at CloudFront. TLS terminates at ALB. No need for an additional proxy layer — AWS LBC is sufficient.</p>
       </div>
     </div>
   </section>
