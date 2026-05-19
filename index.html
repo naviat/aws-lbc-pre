@@ -588,7 +588,7 @@
           <div class="card-title">ALB Controller</div>
           <p class="body">Provides NLB annotation config for metadata settings</p>
         </div>
-        <div class="body caption" style="margin-top:0.5rem">Current cost: ~$25/month (NLB + NGINX pod resources)</div>
+        <div class="body caption" style="margin-top:0.5rem">Current cost: ~$100/month per environment (NLB + NGINX pod resources, excluding traffic costs)</div>
       </div>
     </div>
   </section>
@@ -627,7 +627,7 @@
           <div class="card-title" style="color:var(--muted)">Cost Constraints</div>
           <ul class="bullet-list">
             <li>No commercial licensing fees</li>
-            <li>Comparable or lower operational costs than current (~$25/mo)</li>
+            <li>Comparable or lower operational costs than current (~$100/month per environment)</li>
           </ul>
         </div>
       </div>
@@ -715,7 +715,7 @@
     <div class="reveal" style="display:flex;gap:1rem;margin-top:1.5rem">
       <span class="badge badge-muted">Migration: Medium</span>
       <span class="badge badge-green">Long-term support: Strong</span>
-      <span class="badge badge-accent">Cost: ~$25/month</span>
+      <span class="badge badge-accent">Cost: ~$100/month per env</span>
     </div>
   </section>
 
@@ -763,7 +763,7 @@
     <div class="reveal" style="display:flex;gap:1rem;margin-top:1.5rem">
       <span class="badge badge-muted">Migration: Medium–High</span>
       <span class="badge badge-muted">Long-term support: Medium</span>
-      <span class="badge badge-accent">Cost: ~$25/month + gateway pods</span>
+      <span class="badge badge-accent">Cost: ~$100/month per env + gateway pods</span>
     </div>
   </section>
 
@@ -812,7 +812,7 @@
     <div class="reveal" style="display:flex;gap:1rem;margin-top:1.5rem">
       <span class="badge badge-red">Migration: High</span>
       <span class="badge badge-blue">Long-term support: Good (CNCF)</span>
-      <span class="badge badge-accent">Cost: ~$25/month + Envoy pods</span>
+      <span class="badge badge-accent">Cost: ~$100/month per env + Envoy pods</span>
     </div>
   </section>
 
@@ -976,14 +976,14 @@
           <div style="display:flex;gap:1rem;margin-top:0.8rem">
             <div style="flex:1;text-align:center">
               <div style="font-size:0.68rem;color:var(--muted-2);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.3rem">Current</div>
-              <div style="font-family:var(--font-serif);font-size:1.8rem;color:var(--text)">~$25</div>
-              <div style="font-size:0.7rem;color:var(--muted)">NLB + NGINX pods</div>
+              <div style="font-family:var(--font-serif);font-size:1.8rem;color:var(--text)">~$100</div>
+              <div style="font-size:0.7rem;color:var(--muted)">NLB + NGINX pods / env</div>
             </div>
             <div style="display:flex;align-items:center;color:var(--accent);font-size:1.2rem">→</div>
             <div style="flex:1;text-align:center">
               <div style="font-size:0.68rem;color:var(--muted-2);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.3rem">Future</div>
-              <div style="font-family:var(--font-serif);font-size:1.8rem;color:var(--green)">~$25</div>
-              <div style="font-size:0.7rem;color:var(--muted)">NLB + AWS LBC</div>
+              <div style="font-family:var(--font-serif);font-size:1.8rem;color:var(--green)">~$100</div>
+              <div style="font-size:0.7rem;color:var(--muted)">NLB + AWS LBC / env</div>
             </div>
           </div>
           <p class="body caption" style="margin-top:0.8rem;text-align:center">Potential savings: fewer ingress pods, reduced compute, no commercial licensing</p>
