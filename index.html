@@ -604,7 +604,7 @@
       <div class="card">
         <div class="card-title">Must Have</div>
         <ul class="check-list">
-          <li>NLB creation (CloudFront origin requirement)</li>
+          <li><strong style="color:var(--text)">ALB creation via AWS LBC</strong> — replaces the NLB + NGINX layer, CloudFront origin points to ALB</li>
           <li>SSL termination with ACM certificates</li>
           <li>Path-based routing</li>
           <li>Host-based routing (multiple domains)</li>
@@ -615,19 +615,35 @@
       </div>
       <div style="display:flex;flex-direction:column;gap:1rem">
         <div class="card">
-          <div class="card-title" style="color:var(--blue)">Nice to Have</div>
-          <ul class="bullet-list">
-            <li>Path rewriting</li>
-            <li>Custom response headers</li>
-            <li>Proxy protocol support</li>
-            <li>Active community &amp; ecosystem</li>
-          </ul>
+          <div class="card-title" style="color:var(--blue)">Nice to Have — AWS LBC Status</div>
+          <div style="display:flex;flex-direction:column;gap:0.6rem;margin-top:0.4rem">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem">
+              <span class="body" style="font-size:0.82rem">Path rewriting</span>
+              <span class="badge badge-green" style="white-space:nowrap;flex-shrink:0">✓ Yes (late 2025)</span>
+            </div>
+            <div style="font-size:0.72rem;color:var(--muted-2);padding-bottom:0.4rem;border-bottom:1px solid var(--border)">Native ALB URL &amp; host-header rewrite — closes the biggest nginx migration blocker</div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem">
+              <span class="body" style="font-size:0.82rem">Custom response headers</span>
+              <span class="badge badge-muted" style="white-space:nowrap;flex-shrink:0">~ Partial</span>
+            </div>
+            <div style="font-size:0.72rem;color:var(--muted-2);padding-bottom:0.4rem;border-bottom:1px solid var(--border)">Security headers (HSTS etc.) supported; no nginx snippets / Lua / arbitrary proxy logic — use CloudFront response header policies for the rest</div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem">
+              <span class="body" style="font-size:0.82rem">Proxy protocol</span>
+              <span class="badge badge-green" style="white-space:nowrap;flex-shrink:0">✓ Via NLB</span>
+            </div>
+            <div style="font-size:0.72rem;color:var(--muted-2);padding-bottom:0.4rem;border-bottom:1px solid var(--border)">NLB target groups support Proxy Protocol v2; ALB uses X-Forwarded-For instead</div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem">
+              <span class="body" style="font-size:0.82rem">Active community</span>
+              <span class="badge badge-green" style="white-space:nowrap;flex-shrink:0">✓ AWS/EKS</span>
+            </div>
+            <div style="font-size:0.72rem;color:var(--muted-2)">Large EKS ecosystem; fewer community tutorials than nginx but strong AWS-native integration</div>
+          </div>
         </div>
         <div class="card">
           <div class="card-title" style="color:var(--muted)">Cost Constraints</div>
           <ul class="bullet-list">
             <li>No commercial licensing fees</li>
-            <li>Comparable or lower operational costs than current (~$100/month per environment)</li>
+            <li>Comparable or lower than current (~$100/month per environment, excl. traffic)</li>
           </ul>
         </div>
       </div>
