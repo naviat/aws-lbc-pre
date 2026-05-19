@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kubernetes Ingress Migration · ProphetX Engineering</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+  <style>
+    /* ===========================================
+       THEME VARIABLES — edit these to restyle
+       =========================================== */
+    :root {
+      --bg:         #0d1117;
+      --surface:    #161b22;
+      --surface-2:  #1c2128;
+      --border:     rgba(255,255,255,0.06);
+      --border-2:   rgba(255,255,255,0.10);
+      --text:       #e6edf3;
+      --muted:      #7d8590;
+      --muted-2:    #5a6470;
+      --accent:     #f0883e;
+      --accent-dim: rgba(240,136,62,0.12);
+      --accent-glow:rgba(240,136,62,0.25);
+      --green:      #3fb950;
+      --green-dim:  rgba(63,185,80,0.12);
+      --red:        #f85149;
+      --red-dim:    rgba(248,81,73,0.10);
+      --blue:       #58a6ff;
+      --blue-dim:   rgba(88,166,255,0.10);
+      --font-serif: 'Cormorant Garamond', Georgia, serif;
+      --font-sans:  'DM Sans', system-ui, sans-serif;
+      --pad:        clamp(2.5rem, 6vw, 5rem);
+      --ease:       cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* ===========================================
+       RESET & BASE
+       =========================================== */
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    html {
+      scroll-snap-type: y mandatory;
+      overflow-y: scroll;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* ===========================================
+       SLIDE BASE
+       Each <section> is one full-height slide
+       =========================================== */
+    .slide {
+      min-height: 100vh;
+      scroll-snap-align: start;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: var(--pad);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Subtle global radial glow behind each slide */
+    .slide::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(240,136,62,0.04) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* ===========================================
+       REVEAL ANIMATIONS
+       Elements with .reveal fade+slide up when
+       the parent slide gets .visible
+       =========================================== */
+    .reveal {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.65s var(--ease), transform 0.65s var(--ease);
+    }
+
+    .slide.visible .reveal { opacity: 1; transform: translateY(0); }
+
+    /* Stagger delays for sequential children */
+    .reveal:nth-child(1)  { transition-delay: 0.05s; }
+    .reveal:nth-child(2)  { transition-delay: 0.15s; }
+    .reveal:nth-child(3)  { transition-delay: 0.25s; }
+    .reveal:nth-child(4)  { transition-delay: 0.35s; }
+    .reveal:nth-child(5)  { transition-delay: 0.45s; }
+    .reveal:nth-child(6)  { transition-delay: 0.55s; }
+    .reveal:nth-child(7)  { transition-delay: 0.65s; }
+    .reveal:nth-child(8)  { transition-delay: 0.75s; }
+    .reveal:nth-child(9)  { transition-delay: 0.85s; }
+
+    /* ===========================================
+       NAVIGATION: PROGRESS BAR + DOTS
+       =========================================== */
+    .progress-bar {
+      position: fixed;
+      top: 0; left: 0;
+      height: 2px;
+      background: var(--accent);
+      transition: width 0.3s ease;
+      z-index: 100;
+    }
+
+    .nav-dots {
+      position: fixed;
+      right: 1.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      z-index: 100;
+    }
+
+    .nav-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--muted-2);
+      cursor: pointer;
+      transition: background 0.25s, transform 0.25s;
+      border: none;
+    }
+    .nav-dot.active {
+      background: var(--accent);
+      transform: scale(1.4);
+    }
+    .nav-dot:hover { background: var(--muted); }
+
+    /* Keyboard hint bottom-left */
+    .key-hint {
+      position: fixed;
+      bottom: 1.5rem; left: 1.5rem;
+      font-size: 0.65rem;
+      color: var(--muted-2);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      z-index: 100;
+    }
+
+    /* ===========================================
+       TYPOGRAPHY HELPERS
+       =========================================== */
+    .eyebrow {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1rem;
+    }
+
+    .display {
+      font-family: var(--font-serif);
+      font-size: clamp(2.8rem, 5.5vw, 5rem);
+      font-weight: 600;
+      line-height: 1.08;
+      color: var(--text);
+    }
+
+    .headline {
+      font-family: var(--font-serif);
+      font-size: clamp(2rem, 3.5vw, 3.2rem);
+      font-weight: 600;
+      line-height: 1.12;
+      color: var(--text);
+    }
+
+    .subheadline {
+      font-family: var(--font-serif);
+      font-size: clamp(1.4rem, 2.2vw, 2rem);
+      font-weight: 400;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .body-lg  { font-size: 1.05rem; color: var(--muted); font-weight: 300; line-height: 1.7; }
+    .body     { font-size: 0.9rem;  color: var(--muted); font-weight: 300; line-height: 1.6; }
+    .caption  { font-size: 0.72rem; color: var(--muted-2); letter-spacing: 0.04em; }
+
+    .accent   { color: var(--accent); }
+    .green    { color: var(--green); }
+    .red      { color: var(--red); }
+    .blue     { color: var(--blue); }
+
+    /* Horizontal rule */
+    .rule {
+      height: 1px;
+      background: var(--border);
+      margin: 1.5rem 0;
+    }
+
+    /* Accent divider under headings */
+    .accent-line {
+      width: 40px; height: 2px;
+      background: var(--accent);
+      margin: 1.2rem 0 1.8rem;
+    }
+
+    /* ===========================================
+       LAYOUT HELPERS
+       =========================================== */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    .three-col {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+
+    /* ===========================================
+       CARD COMPONENT
+       =========================================== */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.5rem;
+    }
+
+    .card-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.8rem;
+    }
+
+    /* ===========================================
+       BADGE / CHIP
+       =========================================== */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 3px;
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+    }
+    .badge-accent  { background: var(--accent-dim);  color: var(--accent); }
+    .badge-green   { background: var(--green-dim);   color: var(--green);  }
+    .badge-red     { background: var(--red-dim);     color: var(--red);    }
+    .badge-blue    { background: var(--blue-dim);    color: var(--blue);   }
+    .badge-muted   { background: var(--surface-2);   color: var(--muted);  }
+
+    /* ===========================================
+       LIST HELPERS
+       =========================================== */
+    .check-list, .cross-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+
+    .check-list li::before { content: '✓ '; color: var(--green); font-weight: 600; }
+    .cross-list  li::before { content: '✗ '; color: var(--red);   font-weight: 600; }
+
+    .check-list li, .cross-list li {
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .bullet-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+    .bullet-list li { font-size: 0.88rem; color: var(--muted); padding-left: 1rem; position: relative; line-height: 1.5; }
+    .bullet-list li::before { content: '—'; position: absolute; left: 0; color: var(--muted-2); }
+
+    /* ===========================================
+       ARCH DIAGRAM (text-based)
+       =========================================== */
+    .arch-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+    .arch-node {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.6rem 1.4rem;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .arch-node.accent-node { border-color: var(--accent); color: var(--accent); }
+    .arch-arrow {
+      font-size: 1rem;
+      color: var(--muted-2);
+      line-height: 1.2;
+      padding: 0.15rem 0;
+    }
+
+    /* ===========================================
+       COMPARISON TABLE
+       =========================================== */
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+    .compare-table th {
+      padding: 0.6rem 1rem;
+      text-align: left;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+    .compare-table th:first-child { color: var(--accent); }
+    .compare-table td {
+      padding: 0.65rem 1rem;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .compare-table td:first-child { color: var(--text); font-weight: 500; font-size: 0.78rem; }
+    .compare-table tr:last-child td { border-bottom: none; }
+    .compare-table tr.highlight td { background: var(--accent-dim); }
+    .compare-table tr.highlight td:first-child { color: var(--accent); }
+
+    /* ===========================================
+       STAT / METRIC BOX
+       =========================================== */
+    .stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; }
+    .stat-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.2rem;
+      text-align: center;
+    }
+    .stat-value {
+      font-family: var(--font-serif);
+      font-size: 2rem;
+      font-weight: 600;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .stat-label { font-size: 0.7rem; color: var(--muted-2); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 0.4rem; }
+
+    /* Reason number badge */
+    .reason-num {
+      font-family: var(--font-serif);
+      font-size: 2.5rem;
+      font-weight: 600;
+      color: var(--accent-dim);
+      line-height: 1;
+      margin-bottom: 0.4rem;
+    }
+
+    /* ===========================================
+       SLIDE 1: TITLE
+       =========================================== */
+    #s1 { background: var(--bg); }
+
+    #s1 .meta-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    #s1 .meta-pill {
+      padding: 0.3rem 0.8rem;
+      border: 1px solid var(--border-2);
+      border-radius: 2px;
+      font-size: 0.72rem;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+    #s1 .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--muted-2); }
+
+    /* ===========================================
+       SLIDE 10: BIG QUOTE / DECISION CALLOUT
+       =========================================== */
+    .decision-callout {
+      background: var(--accent-dim);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 6px 6px 0;
+      padding: 1.5rem 2rem;
+    }
+
+    /* ===========================================
+       RESPONSIVE
+       =========================================== */
+    @media (max-width: 768px) {
+      .two-col, .three-col { grid-template-columns: 1fr; }
+      .stat-grid { grid-template-columns: repeat(2,1fr); }
+      .nav-dots, .key-hint { display: none; }
+    }
+
+    /* ===========================================
+       REDUCED MOTION
+       =========================================== */
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { transition: opacity 0.3s ease; transform: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Progress bar -->
+  <div class="progress-bar" id="progressBar"></div>
+
+  <!-- Navigation dots (populated by JS) -->
+  <nav class="nav-dots" id="navDots" aria-label="Slide navigation"></nav>
+
+  <!-- Keyboard hint -->
+  <div class="key-hint">← → Space to navigate</div>
+
+  <!-- =============================================
+       SLIDE 1: TITLE
+       ============================================= -->
+  <section class="slide" id="s1" data-label="Title">
+    <div class="eyebrow reveal">Infrastructure Decision · ProphetX Engineering</div>
+    <h1 class="display reveal">
+      Kubernetes Ingress<br>
+      <span style="color:var(--accent)">Migration PoC</span>
+    </h1>
+    <div class="accent-line reveal"></div>
+    <p class="body-lg reveal" style="max-width:520px">
+      Selecting a production-ready replacement for the<br>
+      community ingress-nginx controller before its retirement.
+    </p>
+    <div class="meta-row reveal">
+      <span class="meta-pill">Q1 2026</span>
+      <span class="dot"></span>
+      <span class="meta-pill">3 Candidates Evaluated</span>
+      <span class="dot"></span>
+      <span class="meta-pill badge-accent" style="background:var(--accent-dim);color:var(--accent);border-color:transparent">Decision: AWS LBC</span>
+    </div>
+  </section>
+
+  <!-- =============================================
+       SLIDE 2: THE PROBLEM
+       ============================================= -->
+  <section class="slide" id="s2" data-label="Problem">
+    <div class="eyebrow reveal">Why We Need to Change</div>
+    <h2 class="headline reveal">Two Compounding Problems</h2>
+    <div class="accent-line reveal"></div>
+
+    <div class="two-col reveal" style="margin-top:0">
+
+      <!-- LEFT: Community EOL -->
+      <div style="display:flex;flex-direction:column;gap:0.9rem">
+        <div style="display:flex;align-items:center;gap:0.7rem;margin-bottom:0.2rem">
+          <span class="badge badge-red" style="font-size:0.75rem">01</span>
+          <span style="font-size:0.9rem;font-weight:600;color:var(--text)">Community Deprecation</span>
+        </div>
+        <p class="body">
+          The official <strong style="color:var(--text)">kubernetes/ingress-nginx</strong> maintainer announced retirement of the community controller. End-of-life is <strong style="color:var(--accent)">March 2026</strong> — no more security patches, no bug fixes, no upstream support.
+        </p>
+        <div class="card">
+          <div class="card-title">Risk if we don't act</div>
+          <ul class="cross-list">
+            <li>No CVE / security vulnerability patches</li>
+            <li>No upstream bug fixes or K8s compatibility updates</li>
+            <li>Breaks future Kubernetes version upgrades</li>
+            <li>Running unsupported software in production</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- RIGHT: Architecture issues -->
+      <div style="display:flex;flex-direction:column;gap:0.9rem">
+        <div style="display:flex;align-items:center;gap:0.7rem;margin-bottom:0.2rem">
+          <span class="badge badge-red" style="font-size:0.75rem">02</span>
+          <span style="font-size:0.9rem;font-weight:600;color:var(--text)">Current Architecture Pain Points</span>
+        </div>
+        <p class="body">
+          Independent of the EOL, the existing setup carries its own operational debt that the migration is an opportunity to resolve.
+        </p>
+        <div class="card">
+          <div class="card-title">Known issues today</div>
+          <ul class="cross-list">
+            <li><strong style="color:var(--text)">Split annotation model</strong> — NLB config spread across ALB Controller <em>and</em> NGINX Ingress, fragile and confusing</li>
+            <li><strong style="color:var(--text)">Two controllers, one job</strong> — ALB Controller + ingress-nginx both required just to route traffic</li>
+            <li><strong style="color:var(--text)">Extra failure surface</strong> — NGINX ingress pods are an additional layer that can crash, OOM, or mis-route</li>
+            <li><strong style="color:var(--text)">Operational overhead</strong> — separate NGINX upgrade cycle, custom config, dedicated debugging path</li>
+          </ul>
+        </div>
+        <div class="card" style="border-color:var(--accent);background:var(--accent-dim)">
+          <p style="font-size:0.78rem;color:var(--accent);font-weight:500">
+            The EOL deadline is a forcing function — but the architecture already benefits from simplification.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- =============================================
+       SLIDE 3: TIMELINE
+       ============================================= -->
+  <section class="slide" id="s3" data-label="Timeline">
+    <div class="eyebrow reveal">Timeline</div>
+    <h2 class="headline reveal">Migration Schedule</h2>
+    <div class="accent-line reveal"></div>
+    <div style="display:flex;flex-direction:column;gap:1.5rem;max-width:680px" class="reveal">
+      <div style="display:flex;gap:1.5rem;align-items:flex-start">
+        <div style="min-width:110px">
+          <div style="font-size:0.72rem;color:var(--muted-2);letter-spacing:0.08em;text-transform:uppercase">Now → Q1 2026</div>
+          <div style="font-family:var(--font-serif);font-size:1.3rem;color:var(--accent);margin-top:0.2rem">PoC Phase</div>
+        </div>
+        <div style="padding-top:0.3rem">
+          <div class="rule" style="margin:0 0 0.5rem;width:1px;height:100%;background:var(--border)"></div>
+        </div>
+        <div>
+          <p class="body">Evaluate candidates, validate architecture, test routing behaviour and SSL termination in a non-production environment.</p>
+        </div>
+      </div>
+      <div style="height:1px;background:var(--border)"></div>
+      <div style="display:flex;gap:1.5rem;align-items:flex-start">
+        <div style="min-width:110px">
+          <div style="font-size:0.72rem;color:var(--muted-2);letter-spacing:0.08em;text-transform:uppercase">Feb 2026</div>
+          <div style="font-family:var(--font-serif);font-size:1.3rem;color:var(--accent);margin-top:0.2rem">Production</div>
+        </div>
+        <div>
+          <p class="body">Complete production migration — all traffic routed through the new controller before the March deadline.</p>
+        </div>
+      </div>
+      <div style="height:1px;background:var(--border)"></div>
+      <div style="display:flex;gap:1.5rem;align-items:flex-start">
+        <div style="min-width:110px">
+          <div style="font-size:0.72rem;color:var(--muted-2);letter-spacing:0.08em;text-transform:uppercase">Mar 2026</div>
+          <div style="font-family:var(--font-serif);font-size:1.3rem;color:var(--red);margin-top:0.2rem">EOL</div>
+        </div>
+        <div>
+          <p class="body">ingress-nginx community project reaches end-of-life. We must be fully migrated by this date.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================
+       SLIDE 4: CURRENT ARCHITECTURE
+       ============================================= -->
+  <section class="slide" id="s4" data-label="Architecture">
+    <div class="eyebrow reveal">Current Architecture</div>
+    <h2 class="headline reveal">How traffic flows today</h2>
+    <div class="accent-line reveal"></div>
+    <div class="two-col reveal" style="margin-top:0;align-items:center">
+      <!-- Architecture diagram -->
+      <div class="arch-box">
+        <div class="arch-node accent-node">Internet</div>
+        <div class="arch-arrow">↓</div>
+        <div class="arch-node">CloudFront <span style="color:var(--muted);font-size:0.7rem">(CDN + WAF)</span></div>
+        <div class="arch-arrow">↓</div>
+        <div class="arch-node">NLB <span style="color:var(--muted);font-size:0.7rem">(SSL termination · Proxy v2)</span></div>
+        <div class="arch-arrow">↓</div>
+        <div class="arch-node">NGINX Ingress Pods <span style="color:var(--muted);font-size:0.7rem">(routing · rewrites · headers)</span></div>
+        <div class="arch-arrow">↓</div>
+        <div class="arch-node">Application Services</div>
+      </div>
+      <!-- Key components -->
+      <div style="display:flex;flex-direction:column;gap:0.8rem">
+        <div class="card">
+          <div class="card-title">CloudFront</div>
+          <p class="body">CDN, caching, WAF integration, edge performance</p>
+        </div>
+        <div class="card">
+          <div class="card-title">NLB</div>
+          <p class="body">SSL termination via ACM, Proxy Protocol v2 enabled</p>
+        </div>
+        <div class="card" style="border-color:rgba(248,81,73,0.3)">
+          <div class="card-title" style="color:var(--red)">NGINX Ingress ← retiring</div>
+          <p class="body">Path routing, rewrites, custom headers</p>
+        </div>
+        <div class="card">
+          <div class="card-title">ALB Controller</div>
+          <p class="body">Provides NLB annotation config for metadata settings</p>
+        </div>
+        <div class="body caption" style="margin-top:0.5rem">Current cost: ~$25/month (NLB + NGINX pod resources)</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================
+       SLIDE 5: REQUIREMENTS
+       ============================================= -->
+  <section class="slide" id="s5" data-label="Requirements">
+    <div class="eyebrow reveal">What We Need</div>
+    <h2 class="headline reveal">Requirements</h2>
+    <div class="accent-line reveal"></div>
+    <div class="two-col reveal" style="margin-top:0">
+      <div class="card">
+        <div class="card-title">Must Have</div>
+        <ul class="check-list">
+          <li>NLB creation (CloudFront origin requirement)</li>
+          <li>SSL termination with ACM certificates</li>
+          <li>Path-based routing</li>
+          <li>Host-based routing (multiple domains)</li>
+          <li>Long-term community / vendor support</li>
+          <li>Minimal architecture changes</li>
+          <li>No commercial licensing fees</li>
+        </ul>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1rem">
+        <div class="card">
+          <div class="card-title" style="color:var(--blue)">Nice to Have</div>
+          <ul class="bullet-list">
+            <li>Path rewriting</li>
+            <li>Custom response headers</li>
+            <li>Proxy protocol support</li>
+            <li>Active community &amp; ecosystem</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color:var(--muted)">Cost Constraints</div>
+          <ul class="bullet-list">
+            <li>No commercial licensing fees</li>
+            <li>Comparable or lower operational costs than current (~$25/mo)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================
+       SLIDE 6: THREE CANDIDATES
+       ============================================= -->
+  <section class="slide" id="s6" data-label="Candidates">
+    <div class="eyebrow reveal">Evaluation</div>
+    <h2 class="headline reveal">Three Candidates</h2>
+    <div class="accent-line reveal"></div>
+    <div class="three-col reveal" style="margin-top:0">
+      <div class="card" style="border-color:var(--accent)">
+        <div class="card-title">AWS Load Balancer Controller</div>
+        <p class="body" style="margin-bottom:1rem">AWS's official Kubernetes controller. Creates NLBs and ALBs natively, no Gateway API CRDs required.</p>
+        <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
+          <span class="badge badge-green">Low complexity</span>
+          <span class="badge badge-green">AWS backed</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">NGINX Gateway Fabric</div>
+        <p class="body" style="margin-bottom:1rem">F5/NGINX Inc's Gateway API implementation. Familiar NGINX concepts but requires Gateway API CRDs.</p>
+        <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
+          <span class="badge badge-muted">Med complexity</span>
+          <span class="badge badge-red">Vendor risk</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Envoy Gateway</div>
+        <p class="body" style="margin-bottom:1rem">CNCF project built on Envoy Proxy. Vendor-neutral governance, modern Gateway API standard.</p>
+        <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
+          <span class="badge badge-muted">High complexity</span>
+          <span class="badge badge-blue">CNCF backed</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================
+       SLIDE 7: DEEP DIVE — AWS LBC
+       ============================================= -->
+  <section class="slide" id="s7" data-label="AWS LBC">
+    <div class="eyebrow reveal">Candidate 1 of 3</div>
+    <h2 class="headline reveal">AWS Load Balancer Controller</h2>
+    <div class="accent-line reveal"></div>
+    <div class="two-col reveal" style="margin-top:0">
+      <div>
+        <p class="body" style="margin-bottom:1rem">
+          <strong style="color:var(--text)">Architecture:</strong><br>
+          CloudFront → NLB (via AWS LB Controller) → Pods
+        </p>
+        <p class="body" style="margin-bottom:1.2rem">
+          AWS's official controller manages NLBs and ALBs directly via Service annotations. No separate ingress pods needed.
+        </p>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+          <span class="badge badge-green">Already installed in our cluster</span>
+          <span class="badge badge-green">No new CRDs</span>
+          <span class="badge badge-green">AWS backed</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0.8rem">
+        <div class="card">
+          <div class="card-title" style="color:var(--green)">Pros</div>
+          <ul class="check-list">
+            <li>Native AWS integration (ACM, SGs, IAM)</li>
+            <li>Already installed — IAM permissions exist</li>
+            <li>No ingress pods to manage</li>
+            <li>Lower operational overhead</li>
+            <li>Open source, AWS maintained</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color:var(--red)">Cons</div>
+          <ul class="cross-list">
+            <li>Less flexible routing than NGINX</li>
+            <li>Different annotation model</li>
+            <li>Limited path rewriting</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="reveal" style="display:flex;gap:1rem;margin-top:1.5rem">
+      <span class="badge badge-muted">Migration: Medium</span>
+      <span class="badge badge-green">Long-term support: Strong</span>
+      <span class="badge badge-accent">Cost: ~$25/month</span>
+    </div>
+  </section>
+
+  <!-- =============================================
+       SLIDE 8: DEEP DIVE — NGINX GATEWAY FABRIC
+       ============================================= -->
+  <section class="slide" id="s8" data-label="NGINX GF">
+    <div class="eyebrow reveal">Candidate 2 of 3</div>
+    <h2 class="headline reveal">NGINX Gateway Fabric</h2>
+    <div class="accent-line reveal"></div>
+    <div class="two-col reveal" style="margin-top:0">
+      <div>
+        <p class="body" style="margin-bottom:1rem">
+          <strong style="color:var(--text)">Architecture:</strong><br>
+          CloudFront → NLB → NGINX Gateway Fabric → Pods
+        </p>
+        <p class="body" style="margin-bottom:1.2rem">
+          F5/NGINX Inc's Gateway API implementation. Familiar NGINX concepts with Gateway API CRDs. Provides a more direct migration path from ingress-nginx conceptually.
+        </p>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+          <span class="badge badge-muted">Requires Gateway API CRDs</span>
+          <span class="badge badge-red">F5 commercial vendor</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0.8rem">
+        <div class="card">
+          <div class="card-title" style="color:var(--green)">Pros</div>
+          <ul class="check-list">
+            <li>Familiar NGINX concepts</li>
+            <li>Gateway API standard</li>
+            <li>Direct conceptual migration</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color:var(--red)">Cons</div>
+          <ul class="cross-list">
+            <li>Owned by F5 Networks (commercial vendor)</li>
+            <li>Risk of future commercialisation</li>
+            <li>Less community governance</li>
+            <li>Gateway API migration still required</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="reveal" style="display:flex;gap:1rem;margin-top:1.5rem">
+      <span class="badge badge-muted">Migration: Medium–High</span>
+      <span class="badge badge-muted">Long-term support: Medium</span>
+      <span class="badge badge-accent">Cost: ~$25/month + gateway pods</span>
+    </div>
+  </section>
+
+  <!-- =============================================
+       SLIDE 9: DEEP DIVE — ENVOY GATEWAY
+       ============================================= -->
+  <section class="slide" id="s9" data-label="Envoy GW">
+    <div class="eyebrow reveal">Candidate 3 of 3</div>
+    <h2 class="headline reveal">Envoy Gateway</h2>
+    <div class="accent-line reveal"></div>
+    <div class="two-col reveal" style="margin-top:0">
+      <div>
+        <p class="body" style="margin-bottom:1rem">
+          <strong style="color:var(--text)">Architecture:</strong><br>
+          CloudFront → NLB (via Service) → Envoy Gateway → Pods
+        </p>
+        <p class="body" style="margin-bottom:1.2rem">
+          CNCF project built on Envoy Proxy. Vendor-neutral governance, powerful routing, but the newest and most complex of the three options.
+        </p>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+          <span class="badge badge-blue">CNCF backed</span>
+          <span class="badge badge-muted">Requires Gateway API CRDs</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0.8rem">
+        <div class="card">
+          <div class="card-title" style="color:var(--green)">Pros</div>
+          <ul class="check-list">
+            <li>Vendor-neutral CNCF governance</li>
+            <li>Very powerful routing capabilities</li>
+            <li>Strong Envoy ecosystem (Istio, Contour)</li>
+            <li>Modern Gateway API standard</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color:var(--red)">Cons</div>
+          <ul class="cross-list">
+            <li>Newest project — less mature</li>
+            <li>Steeper learning curve</li>
+            <li>Most operationally complex</li>
+            <li>Gateway API expertise required</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="reveal" style="display:flex;gap:1rem;margin-top:1.5rem">
+      <span class="badge badge-red">Migration: High</span>
+      <span class="badge badge-blue">Long-term support: Good (CNCF)</span>
+      <span class="badge badge-accent">Cost: ~$25/month + Envoy pods</span>
+    </div>
+  </section>
+
+  <!-- =============================================
+       SLIDE 10: COMPARISON TABLE
+       ============================================= -->
+  <section class="slide" id="s10" data-label="Comparison">
+    <div class="eyebrow reveal">Side-by-Side</div>
+    <h2 class="headline reveal">Candidate Comparison</h2>
+    <div class="accent-line reveal"></div>
+    <div class="reveal" style="overflow-x:auto;margin-top:0">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Criterion</th>
+            <th>AWS LBC</th>
+            <th>NGINX Gateway Fabric</th>
+            <th>Envoy Gateway</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="highlight">
+            <td>Additional data-plane pods</td>
+            <td><span class="badge badge-green">None</span></td>
+            <td><span class="badge badge-red">Yes</span></td>
+            <td><span class="badge badge-red">Yes</span></td>
+          </tr>
+          <tr class="highlight">
+            <td>Gateway API CRDs required</td>
+            <td><span class="badge badge-green">No</span></td>
+            <td><span class="badge badge-red">Yes</span></td>
+            <td><span class="badge badge-red">Yes</span></td>
+          </tr>
+          <tr class="highlight">
+            <td>Migration complexity</td>
+            <td><span class="badge badge-green">Medium</span></td>
+            <td><span class="badge badge-muted">Medium–High</span></td>
+            <td><span class="badge badge-red">High</span></td>
+          </tr>
+          <tr class="highlight">
+            <td>Long-term support</td>
+            <td><span class="badge badge-green">Strong (AWS)</span></td>
+            <td><span class="badge badge-muted">Medium (F5 risk)</span></td>
+            <td><span class="badge badge-blue">Good (CNCF)</span></td>
+          </tr>
+          <tr class="highlight">
+            <td>Already in cluster</td>
+            <td><span class="badge badge-green">Yes</span></td>
+            <td><span class="badge badge-muted">No</span></td>
+            <td><span class="badge badge-muted">No</span></td>
+          </tr>
+          <tr class="highlight">
+            <td>Vendor commercialisation risk</td>
+            <td><span class="badge badge-green">Low</span></td>
+            <td><span class="badge badge-red">High (F5)</span></td>
+            <td><span class="badge badge-green">Low (CNCF)</span></td>
+          </tr>
+          <tr class="highlight">
+            <td>Operational overhead</td>
+            <td><span class="badge badge-green">Low</span></td>
+            <td><span class="badge badge-muted">Medium</span></td>
+            <td><span class="badge badge-red">High</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="reveal" style="margin-top:1.2rem">
+      <div class="decision-callout">
+        <p style="font-size:0.88rem;color:var(--accent);font-weight:500">AWS LBC wins on every operationally critical dimension — no new pods, no new CRDs, already installed, lowest overhead.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================
+       SLIDE 11: WHY AWS LBC
+       ============================================= -->
+  <section class="slide" id="s11" data-label="Why AWS LBC">
+    <div class="eyebrow reveal">Our Decision</div>
+    <h2 class="headline reveal">Why AWS Load Balancer Controller</h2>
+    <div class="accent-line reveal"></div>
+    <div class="three-col reveal" style="margin-top:0">
+      <div class="card">
+        <div class="reason-num">01</div>
+        <div class="card-title">Best fit for existing architecture</div>
+        <p class="body">CloudFront → NLB → Services already relies on AWS-native components. AWS LBC integrates naturally — no infrastructure changes needed.</p>
+      </div>
+      <div class="card">
+        <div class="reason-num">02</div>
+        <div class="card-title">Lowest operational complexity</div>
+        <p class="body">Removes ingress controller pods entirely. No NGINX-specific tuning, no controller upgrades, simplified troubleshooting.</p>
+      </div>
+      <div class="card">
+        <div class="reason-num">03</div>
+        <div class="card-title">Strong long-term support</div>
+        <p class="body">Official AWS support, active maintenance, aligned with AWS networking roadmap. Avoids repeating the ingress-nginx EOL situation.</p>
+      </div>
+      <div class="card">
+        <div class="reason-num">04</div>
+        <div class="card-title">Already installed</div>
+        <p class="body">Controller is deployed, IAM permissions established, team is familiar. Accelerates PoC and production timelines significantly.</p>
+      </div>
+      <div class="card">
+        <div class="reason-num">05</div>
+        <div class="card-title">Lower migration risk</div>
+        <p class="body">No new CRDs, no new routing abstractions, no retraining required. Avoids major architectural change during a time-sensitive window.</p>
+      </div>
+      <div class="card">
+        <div class="reason-num">06</div>
+        <div class="card-title">CloudFront-centric design</div>
+        <p class="body">WAF at CloudFront, CDN upstream, TLS at NLB — we don't need advanced L7 features. AWS LBC is sufficient without a full proxy layer.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================
+       SLIDE 12: REQUIREMENTS MET + COST
+       ============================================= -->
+  <section class="slide" id="s12" data-label="Requirements Met">
+    <div class="eyebrow reveal">Validation</div>
+    <h2 class="headline reveal">AWS LBC Meets All Core Requirements</h2>
+    <div class="accent-line reveal"></div>
+    <div class="two-col reveal" style="margin-top:0">
+      <div class="card">
+        <div class="card-title">Requirements Checklist</div>
+        <table style="width:100%;border-collapse:collapse;font-size:0.82rem">
+          <tbody>
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:0.5rem 0;color:var(--muted)">NLB support</td>
+              <td style="padding:0.5rem 0;text-align:right"><span class="badge badge-green">✓</span></td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:0.5rem 0;color:var(--muted)">ACM SSL termination</td>
+              <td style="padding:0.5rem 0;text-align:right"><span class="badge badge-green">✓</span></td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:0.5rem 0;color:var(--muted)">Host-based routing</td>
+              <td style="padding:0.5rem 0;text-align:right"><span class="badge badge-green">✓</span></td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:0.5rem 0;color:var(--muted)">Path routing</td>
+              <td style="padding:0.5rem 0;text-align:right"><span class="badge badge-green">✓</span></td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:0.5rem 0;color:var(--muted)">Long-term support</td>
+              <td style="padding:0.5rem 0;text-align:right"><span class="badge badge-green">✓</span></td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:0.5rem 0;color:var(--muted)">Minimal architecture changes</td>
+              <td style="padding:0.5rem 0;text-align:right"><span class="badge badge-green">✓</span></td>
+            </tr>
+            <tr>
+              <td style="padding:0.5rem 0;color:var(--muted)">No licensing fees</td>
+              <td style="padding:0.5rem 0;text-align:right"><span class="badge badge-green">✓</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1rem">
+        <div class="card">
+          <div class="card-title">Cost Neutral Migration</div>
+          <div style="display:flex;gap:1rem;margin-top:0.8rem">
+            <div style="flex:1;text-align:center">
+              <div style="font-size:0.68rem;color:var(--muted-2);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.3rem">Current</div>
+              <div style="font-family:var(--font-serif);font-size:1.8rem;color:var(--text)">~$25</div>
+              <div style="font-size:0.7rem;color:var(--muted)">NLB + NGINX pods</div>
+            </div>
+            <div style="display:flex;align-items:center;color:var(--accent);font-size:1.2rem">→</div>
+            <div style="flex:1;text-align:center">
+              <div style="font-size:0.68rem;color:var(--muted-2);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.3rem">Future</div>
+              <div style="font-family:var(--font-serif);font-size:1.8rem;color:var(--green)">~$25</div>
+              <div style="font-size:0.7rem;color:var(--muted)">NLB + AWS LBC</div>
+            </div>
+          </div>
+          <p class="body caption" style="margin-top:0.8rem;text-align:center">Potential savings: fewer ingress pods, reduced compute, no commercial licensing</p>
+        </div>
+        <div class="card" style="background:var(--accent-dim);border-color:var(--accent)">
+          <p style="font-size:0.82rem;color:var(--accent)">
+            Advanced path rewriting is more limited than NGINX, but current application usage does not justify a more complex gateway platform solely for this feature.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================
+       SLIDE 13: DECISION + NEXT STEPS
+       ============================================= -->
+  <section class="slide" id="s13" data-label="Decision">
+    <div class="eyebrow reveal">Final Decision</div>
+    <h2 class="headline reveal">AWS Load Balancer Controller</h2>
+    <div class="accent-line reveal"></div>
+    <div class="two-col reveal" style="margin-top:0">
+      <div>
+        <p class="body-lg" style="margin-bottom:1.5rem">
+          Selected for providing the <strong style="color:var(--text)">lowest migration risk</strong>, <strong style="color:var(--text)">strong AWS-backed support</strong>, and <strong style="color:var(--text)">minimal architecture changes</strong> — while meeting all core requirements at equivalent cost.
+        </p>
+        <div style="display:flex;flex-direction:column;gap:0.5rem">
+          <div class="badge badge-green" style="width:fit-content">✓ Lowest migration risk</div>
+          <div class="badge badge-green" style="width:fit-content">✓ Strong AWS-backed long-term support</div>
+          <div class="badge badge-green" style="width:fit-content">✓ Minimal architecture changes</div>
+          <div class="badge badge-green" style="width:fit-content">✓ Lower operational overhead</div>
+          <div class="badge badge-green" style="width:fit-content">✓ Already installed in cluster</div>
+          <div class="badge badge-green" style="width:fit-content">✓ Comparable cost profile</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1rem">
+        <div class="card">
+          <div class="card-title">Avoids</div>
+          <ul class="cross-list">
+            <li>Additional gateway complexity</li>
+            <li>Vendor commercialisation risk (F5)</li>
+            <li>Large-scale platform refactoring</li>
+            <li>Gateway API operational overhead at this stage</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title">Next Steps</div>
+          <ul class="bullet-list">
+            <li>Complete PoC validation in non-prod — Q1 2026</li>
+            <li>Validate routing parity with current NGINX config</li>
+            <li>Run traffic shadowing before cutover</li>
+            <li>Production migration — February 2026</li>
+            <li>Decommission ingress-nginx pods post-cutover</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================================
+       JAVASCRIPT: PRESENTATION CONTROLLER
+       ============================================= -->
+  <script>
+    class SlidePresentation {
+      constructor() {
+        this.slides = Array.from(document.querySelectorAll('.slide'));
+        this.current = 0;
+        this.isScrolling = false;
+
+        this.buildNavDots();
+        this.setupObserver();
+        this.setupKeyboard();
+        this.setupWheel();
+        this.setupTouch();
+        this.updateProgress();
+      }
+
+      /* Build navigation dots from slides */
+      buildNavDots() {
+        const nav = document.getElementById('navDots');
+        this.slides.forEach((slide, i) => {
+          const btn = document.createElement('button');
+          btn.className = 'nav-dot' + (i === 0 ? ' active' : '');
+          btn.setAttribute('aria-label', slide.dataset.label || `Slide ${i + 1}`);
+          btn.setAttribute('title', slide.dataset.label || `Slide ${i + 1}`);
+          btn.addEventListener('click', () => this.goTo(i));
+          nav.appendChild(btn);
+        });
+        this.dots = Array.from(nav.querySelectorAll('.nav-dot'));
+      }
+
+      /* IntersectionObserver: adds .visible when slide enters viewport */
+      setupObserver() {
+        const obs = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('visible');
+              this.current = this.slides.indexOf(entry.target);
+              this.updateDots();
+              this.updateProgress();
+            }
+          });
+        }, { threshold: 0.4 });
+
+        this.slides.forEach(s => obs.observe(s));
+      }
+
+      /* Keyboard: arrow keys and space */
+      setupKeyboard() {
+        document.addEventListener('keydown', e => {
+          if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === ' ') {
+            e.preventDefault();
+            this.goTo(this.current + 1);
+          } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+            e.preventDefault();
+            this.goTo(this.current - 1);
+          }
+        });
+      }
+
+      /* Mouse wheel: debounced to prevent over-scrolling */
+      setupWheel() {
+        let last = 0;
+        window.addEventListener('wheel', e => {
+          e.preventDefault();
+          const now = Date.now();
+          if (now - last < 800) return;
+          last = now;
+          if (e.deltaY > 0) this.goTo(this.current + 1);
+          else               this.goTo(this.current - 1);
+        }, { passive: false });
+      }
+
+      /* Touch swipe support */
+      setupTouch() {
+        let startY = 0;
+        window.addEventListener('touchstart', e => { startY = e.touches[0].clientY; }, { passive: true });
+        window.addEventListener('touchend', e => {
+          const dy = startY - e.changedTouches[0].clientY;
+          if (Math.abs(dy) > 50) dy > 0 ? this.goTo(this.current + 1) : this.goTo(this.current - 1);
+        }, { passive: true });
+      }
+
+      /* Navigate to slide index */
+      goTo(i) {
+        const idx = Math.max(0, Math.min(i, this.slides.length - 1));
+        this.slides[idx].scrollIntoView({ behavior: 'smooth' });
+      }
+
+      /* Sync dot active state */
+      updateDots() {
+        this.dots.forEach((d, i) => d.classList.toggle('active', i === this.current));
+      }
+
+      /* Update top progress bar */
+      updateProgress() {
+        const pct = this.slides.length > 1
+          ? (this.current / (this.slides.length - 1)) * 100
+          : 100;
+        document.getElementById('progressBar').style.width = pct + '%';
+      }
+    }
+
+    new SlidePresentation();
+  </script>
+
+</body>
+</html>
