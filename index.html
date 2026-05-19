@@ -530,21 +530,21 @@
       <div style="height:1px;background:var(--border)"></div>
       <div style="display:flex;gap:1.5rem;align-items:flex-start">
         <div style="min-width:110px">
-          <div style="font-size:0.72rem;color:var(--muted-2);letter-spacing:0.08em;text-transform:uppercase">Feb 2026</div>
-          <div style="font-family:var(--font-serif);font-size:1.3rem;color:var(--accent);margin-top:0.2rem">Production</div>
+          <div style="font-size:0.72rem;color:var(--muted-2);letter-spacing:0.08em;text-transform:uppercase">Mar 2026</div>
+          <div style="font-family:var(--font-serif);font-size:1.3rem;color:var(--red);margin-top:0.2rem">EOL</div>
         </div>
         <div>
-          <p class="body">Complete production migration — all traffic routed through the new controller before the March deadline.</p>
+          <p class="body">ingress-nginx reaches end-of-life — no more patches or fixes. <strong style="color:var(--text)">We can continue running it</strong>, but doing so means accepting known security risk on an unpatched controller. Not a hard stop, but a deliberate risk acceptance.</p>
         </div>
       </div>
       <div style="height:1px;background:var(--border)"></div>
       <div style="display:flex;gap:1.5rem;align-items:flex-start">
         <div style="min-width:110px">
-          <div style="font-size:0.72rem;color:var(--muted-2);letter-spacing:0.08em;text-transform:uppercase">Mar 2026</div>
-          <div style="font-family:var(--font-serif);font-size:1.3rem;color:var(--red);margin-top:0.2rem">EOL</div>
+          <div style="font-size:0.72rem;color:var(--muted-2);letter-spacing:0.08em;text-transform:uppercase">Jun / Jul 2026</div>
+          <div style="font-family:var(--font-serif);font-size:1.3rem;color:var(--accent);margin-top:0.2rem">Production</div>
         </div>
         <div>
-          <p class="body">ingress-nginx community project reaches end-of-life. We must be fully migrated by this date.</p>
+          <p class="body">Target production cutover — all traffic migrated to AWS LBC. Gives the team a realistic window to validate the PoC, run traffic shadowing, and execute a low-risk cutover without rushing.</p>
         </div>
       </div>
     </div>
