@@ -736,10 +736,9 @@
           CloudFront → NLB → NGINX Gateway Fabric → Pods
         </p>
         <p class="body" style="margin-bottom:1.2rem">
-          F5/NGINX Inc's Gateway API implementation. Familiar NGINX concepts with Gateway API CRDs. Provides a more direct migration path from ingress-nginx conceptually.
+          F5/NGINX Inc's Gateway API implementation. Direct replacement for ingress-nginx — same architecture, familiar NGINX concepts.
         </p>
         <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
-          <span class="badge badge-muted">Requires Gateway API CRDs</span>
           <span class="badge badge-red">F5 commercial vendor</span>
         </div>
       </div>
@@ -787,7 +786,6 @@
         </p>
         <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
           <span class="badge badge-blue">CNCF backed</span>
-          <span class="badge badge-muted">Requires Gateway API CRDs</span>
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:0.8rem">
@@ -876,7 +874,7 @@
     </div>
     <div class="reveal" style="margin-top:1.2rem">
       <div class="decision-callout">
-        <p style="font-size:0.88rem;color:var(--accent);font-weight:500">AWS LBC wins on every operationally critical dimension — no new pods, no new CRDs, already installed, lowest overhead.</p>
+        <p style="font-size:0.88rem;color:var(--accent);font-weight:500">AWS LBC wins on every operationally critical dimension — no new pods, already installed, lowest overhead.</p>
       </div>
     </div>
   </section>
