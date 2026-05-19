@@ -650,7 +650,7 @@
     <div class="three-col reveal" style="margin-top:0">
       <div class="card" style="border-color:var(--accent)">
         <div class="card-title">AWS Load Balancer Controller</div>
-        <p class="body" style="margin-bottom:1rem">AWS's official Kubernetes controller. Creates NLBs and ALBs natively. Gateway API CRDs required.</p>
+        <p class="body" style="margin-bottom:1rem">AWS's official Kubernetes controller. Creates NLBs and ALBs natively via Service annotations.</p>
         <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
           <span class="badge badge-green">Low complexity</span>
           <span class="badge badge-green">AWS backed</span>
@@ -658,7 +658,7 @@
       </div>
       <div class="card">
         <div class="card-title">NGINX Gateway Fabric</div>
-        <p class="body" style="margin-bottom:1rem">F5/NGINX Inc's Gateway API implementation. Familiar NGINX concepts but requires Gateway API CRDs.</p>
+        <p class="body" style="margin-bottom:1rem">Direct replacement for ingress-nginx community controller. Preserves the same architecture and familiar NGINX concepts.</p>
         <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
           <span class="badge badge-muted">Med complexity</span>
           <span class="badge badge-red">Vendor risk</span>
@@ -840,12 +840,6 @@
           <tr class="highlight">
             <td>Additional data-plane pods</td>
             <td><span class="badge badge-green">None</span></td>
-            <td><span class="badge badge-red">Yes</span></td>
-            <td><span class="badge badge-red">Yes</span></td>
-          </tr>
-          <tr class="highlight">
-            <td>Gateway API CRDs required</td>
-            <td><span class="badge badge-green">No</span></td>
             <td><span class="badge badge-red">Yes</span></td>
             <td><span class="badge badge-red">Yes</span></td>
           </tr>
