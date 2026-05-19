@@ -910,12 +910,12 @@
       <div class="card">
         <div class="reason-num">05</div>
         <div class="card-title">Lower migration risk</div>
-        <p class="body">No new routing abstractions, no retraining required. Avoids major architectural change during a time-sensitive window.</p>
+        <p class="body">Gateway API CRDs required but no new routing abstractions, no retraining required. Avoids major architectural change during a time-sensitive window.</p>
       </div>
       <div class="card">
         <div class="reason-num">06</div>
         <div class="card-title">CloudFront-centric design</div>
-        <p class="body">WAF at CloudFront, CDN upstream, TLS at NLB — we don't need advanced L7 features. AWS LBC is sufficient without a full proxy layer.</p>
+        <p class="body">WAF at CloudFront, CDN upstream, TLS at ALB — we don't need advanced L7 features. AWS LBC is sufficient without a full proxy layer.</p>
       </div>
     </div>
   </section>
