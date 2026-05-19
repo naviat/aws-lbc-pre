@@ -639,13 +639,6 @@
             <div style="font-size:0.72rem;color:var(--muted-2)">Large EKS ecosystem; fewer community tutorials than nginx but strong AWS-native integration</div>
           </div>
         </div>
-        <div class="card">
-          <div class="card-title" style="color:var(--muted)">Cost Constraints</div>
-          <ul class="bullet-list">
-            <li>No commercial licensing fees</li>
-            <li>Comparable or lower than current (~$100/month per environment, excl. traffic)</li>
-          </ul>
-        </div>
       </div>
     </div>
   </section>
@@ -731,7 +724,6 @@
     <div class="reveal" style="display:flex;gap:1rem;margin-top:1.5rem">
       <span class="badge badge-muted">Migration: Medium</span>
       <span class="badge badge-green">Long-term support: Strong</span>
-      <span class="badge badge-accent">Cost: ~$100/month per env</span>
     </div>
   </section>
 
@@ -779,7 +771,6 @@
     <div class="reveal" style="display:flex;gap:1rem;margin-top:1.5rem">
       <span class="badge badge-muted">Migration: Medium–High</span>
       <span class="badge badge-muted">Long-term support: Medium</span>
-      <span class="badge badge-accent">Cost: ~$100/month per env + gateway pods</span>
     </div>
   </section>
 
@@ -828,7 +819,6 @@
     <div class="reveal" style="display:flex;gap:1rem;margin-top:1.5rem">
       <span class="badge badge-red">Migration: High</span>
       <span class="badge badge-blue">Long-term support: Good (CNCF)</span>
-      <span class="badge badge-accent">Cost: ~$100/month per env + Envoy pods</span>
     </div>
   </section>
 
@@ -956,7 +946,7 @@
         <table style="width:100%;border-collapse:collapse;font-size:0.82rem">
           <tbody>
             <tr style="border-bottom:1px solid var(--border)">
-              <td style="padding:0.5rem 0;color:var(--muted)">NLB support</td>
+              <td style="padding:0.5rem 0;color:var(--muted)">ALB creation via AWS LBC</td>
               <td style="padding:0.5rem 0;text-align:right"><span class="badge badge-green">✓</span></td>
             </tr>
             <tr style="border-bottom:1px solid var(--border)">
@@ -987,23 +977,6 @@
         </table>
       </div>
       <div style="display:flex;flex-direction:column;gap:1rem">
-        <div class="card">
-          <div class="card-title">Cost Neutral Migration</div>
-          <div style="display:flex;gap:1rem;margin-top:0.8rem">
-            <div style="flex:1;text-align:center">
-              <div style="font-size:0.68rem;color:var(--muted-2);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.3rem">Current</div>
-              <div style="font-family:var(--font-serif);font-size:1.8rem;color:var(--text)">~$100</div>
-              <div style="font-size:0.7rem;color:var(--muted)">NLB + NGINX pods / env</div>
-            </div>
-            <div style="display:flex;align-items:center;color:var(--accent);font-size:1.2rem">→</div>
-            <div style="flex:1;text-align:center">
-              <div style="font-size:0.68rem;color:var(--muted-2);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:0.3rem">Future</div>
-              <div style="font-family:var(--font-serif);font-size:1.8rem;color:var(--green)">~$100</div>
-              <div style="font-size:0.7rem;color:var(--muted)">NLB + AWS LBC / env</div>
-            </div>
-          </div>
-          <p class="body caption" style="margin-top:0.8rem;text-align:center">Potential savings: fewer ingress pods, reduced compute, no commercial licensing</p>
-        </div>
         <div class="card" style="background:var(--accent-dim);border-color:var(--accent)">
           <p style="font-size:0.82rem;color:var(--accent)">
             Advanced path rewriting is more limited than NGINX, but current application usage does not justify a more complex gateway platform solely for this feature.
