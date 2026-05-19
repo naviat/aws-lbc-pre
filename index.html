@@ -686,10 +686,10 @@
       <div>
         <p class="body" style="margin-bottom:1rem">
           <strong style="color:var(--text)">Architecture:</strong><br>
-          CloudFront → NLB (via AWS LB Controller) → Pods
+          CloudFront → ALB (via AWS LB Controller) → Pods
         </p>
         <p class="body" style="margin-bottom:1.2rem">
-          AWS's official controller manages NLBs and ALBs directly via Service annotations. No separate ingress pods needed.
+          AWS's official controller manages ALBs directly via Service annotations. No separate ingress pods needed.
         </p>
         <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
           <span class="badge badge-green">Already installed in our cluster</span>
